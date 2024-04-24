@@ -27,7 +27,7 @@ setup(
         "numpy",
         "torch",
         "torchaudio",
-        "tqdm",
+        #"tqdm",
         "openai-whisper==20231117"
     ],
     entry_points={

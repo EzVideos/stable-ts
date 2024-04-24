@@ -2,7 +2,7 @@ from types import MethodType
 from typing import Union, Optional, Callable
 
 import numpy as np
-from tqdm import tqdm
+#from tqdm import tqdm
 
 from ..result import Segment, WhisperResult
 from ..non_whisper import transcribe_any
@@ -185,10 +185,11 @@ def _inner_transcribe(model, audio, verbose, **faster_transcribe_options):
     task = faster_transcribe_options.get('task', 'transcribe').title()
     total_duration = round(info.duration, 2)
 
-    with tqdm(total=total_duration, unit='sec', disable=verbose is not False, desc=task) as tqdm_pbar:
+    #with tqdm(total=total_duration, unit='sec', disable=verbose is not False, desc=task) as tqdm_pbar:
+    if True:
 
         def update_pbar(seek):
-            tqdm_pbar.update(seek - tqdm_pbar.n)
+            #tqdm_pbar.update(seek - tqdm_pbar.n)
             if progress_callback is not None:
                 progress_callback(seek, total_duration)
 
@@ -202,7 +203,7 @@ def _inner_transcribe(model, audio, verbose, **faster_transcribe_options):
                 safe_print(Segment(**segment, ignore_unused_args=True).to_display_str())
             final_segments.append(segment)
             update_pbar(segment["end"])
-        update_pbar(tqdm_pbar.total)
+        update_pbar(total_duration)
 
     if verbose:
         print(f'Completed transcription with faster-whisper ({model.model_size_or_path}).')

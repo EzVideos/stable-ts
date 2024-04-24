@@ -4,7 +4,7 @@ import warnings
 
 import torch
 import numpy as np
-from tqdm import tqdm
+#from tqdm import tqdm
 from typing import TYPE_CHECKING, Union, List, Callable, Optional, Tuple
 
 from .result import WhisperResult, Segment
@@ -395,9 +395,11 @@ def align(
     audio.update_post_prep_callback(nonspeech_predictor.get_on_prep_callback(audio.stream))
     failure_count, max_fail = 0, total_words * (failure_threshold or 1)
 
-    with tqdm(total=initial_duration, unit='sec', disable=verbose is not False, desc='Align') as tqdm_pbar:
+    #with tqdm(total=initial_duration, unit='sec', disable=verbose is not False, desc='Align') as tqdm_pbar:
+    if True:
 
         def update_pbar(finish: bool = False):
+            '''
             curr_total = audio.get_duration(2)
             if need_refresh := curr_total != tqdm_pbar.total:
                 tqdm_pbar.total = curr_total
@@ -406,6 +408,7 @@ def align(
                 tqdm_pbar.refresh()
             if progress_callback is not None:
                 progress_callback(seek=tqdm_pbar.n, total=tqdm_pbar.total)
+            '''
 
         def redo_words(_idx: int = None):
             nonlocal seg_words, seg_tokens, seg_words, words, word_tokens, curr_words, temp_word
@@ -983,18 +986,19 @@ def refine(
 
             update_pbar(words[-1].end)
 
-    with tqdm(total=round(total_duration, 2), unit='sec', disable=verbose is not False, desc='Refine') as tqdm_pbar:
+    #with tqdm(total=round(total_duration, 2), unit='sec', disable=verbose is not False, desc='Refine') as tqdm_pbar:
+    if True:
 
         def update_pbar(last_ts: float):
             nonlocal prev_ts
-            tqdm_pbar.update(round(((last_ts - prev_ts) / len(steps)), 2))
+            #tqdm_pbar.update(round(((last_ts - prev_ts) / len(steps)), 2))
             prev_ts = last_ts
 
         for step_count, step in enumerate(steps, 1):
             prev_ts = 0
             _refine(step)
-            update_pbar(round(tqdm_pbar.total / len(step), 2))
-        tqdm_pbar.update(tqdm_pbar.total - tqdm_pbar.n)
+            #update_pbar(round(tqdm_pbar.total / len(step), 2))
+        #tqdm_pbar.update(tqdm_pbar.total - tqdm_pbar.n)
 
     result.reassign_ids()
 
@@ -1311,7 +1315,7 @@ def locate(
 
         if found_target:
             if found_msg:
-                safe_print('Confirmed: ' + found_msg, tqdm_pbar.write)
+                safe_print('Confirmed: ' + found_msg)
             final_tokens = [p['token'] for p in predictions]
             if mode == 1:
                 _, (ws, wts), _ = split_word_tokens([dict(tokens=final_tokens)], tokenizer)
@@ -1322,7 +1326,7 @@ def locate(
                 near_text = "".join(ws)
                 segment = dict(end=final_end, text=text, duration_window_text=near_text, duration_window_word=words)
                 if verbose:
-                    safe_print(f'Duration Window: "{near_text}"\n', tqdm_pbar.write)
+                    safe_print(f'Duration Window: "{near_text}"\n')
                 seek_sample += round(curr_end * SAMPLE_RATE)
             else:
 
@@ -1344,7 +1348,7 @@ def locate(
                 segment.offset_time(seek)
                 segment.seek = curr_start
                 if verbose:
-                    safe_print(segment.to_display_str(), tqdm_pbar.write)
+                    safe_print(segment.to_display_str())
 
         else:
             seek_sample += adjusted_chunk_size if audio_segment.shape[-1] == CHUNK_SAMPLES else audio_segment.shape[-1]
@@ -1353,12 +1357,13 @@ def locate(
 
     total_duration = round(total_samples / SAMPLE_RATE, 2)
     matches = []
-    with tqdm(total=total_duration, unit='sec', disable=verbose is None, desc='Locate') as tqdm_pbar:
+    #with tqdm(total=total_duration, unit='sec', disable=verbose is None, desc='Locate') as tqdm_pbar:
+    if True:
         while seek_sample < total_samples and (not count or found < count):
             if match := _locate():
                 matches.append(match)
-            tqdm_pbar.update(round(seek_sample/SAMPLE_RATE, 2) - tqdm_pbar.n)
-        tqdm_pbar.update(tqdm_pbar.total - tqdm_pbar.n)
+            #tqdm_pbar.update(round(seek_sample/SAMPLE_RATE, 2) - tqdm_pbar.n)
+        #tqdm_pbar.update(tqdm_pbar.total - tqdm_pbar.n)
     if verbose and not matches:
         safe_print(f'Failed to locate "{text}".')
     return matches

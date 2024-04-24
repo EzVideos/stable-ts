@@ -109,11 +109,12 @@ def apply_demucs_model(
 
     orig_length = mix.shape[-1]
     if progress:
-        import tqdm
+        #import tqdm
         total_duration = round(orig_length / model.samplerate, 2)
-        pbar = tqdm.tqdm(total=total_duration, unit='sec', desc='Demucs')
+        #pbar = tqdm.tqdm(total=total_duration, unit='sec', desc='Demucs')
 
         def update_pbar(samples):
+            '''
             if samples is None:
                 pbar.update(pbar.total - pbar.n)
                 pbar.close()
@@ -123,6 +124,7 @@ def apply_demucs_model(
 
             seek_duration = min(round(pbar.n + (samples / model.samplerate), 2), total_duration)
             pbar.update(seek_duration - pbar.n)  # this keeps ``n`` rounded
+            '''
 
     else:
         def update_pbar(samples):

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Union, Optional, Tuple, Callable, List
 
 import torch
 import numpy as np
-from tqdm import tqdm
+#from tqdm import tqdm
 
 import whisper
 from whisper import log_mel_spectrogram, pad_or_trim, DecodingResult, DecodingOptions
@@ -297,10 +297,10 @@ def transcribe_stable(
                     decode_options["language"] = max(probs, key=probs.get)
                     if verbose is not None:
                         detected_msg = f"Detected language: {LANGUAGES[decode_options['language']]}"
-                        if tqdm_pbar.disable:
+                        if True:
                             print(detected_msg)
-                        else:
-                            tqdm_pbar.write(detected_msg)
+                        #else:
+                        #    tqdm_pbar.write(detected_msg)
 
             nonlocal language
             language = decode_options["language"]
@@ -407,18 +407,19 @@ def transcribe_stable(
     )
     audio.update_post_prep_callback(nonspeech_predictor.get_on_prep_callback(audio.stream))
 
-    with tqdm(total=initial_duration, unit='sec', disable=verbose is not False, desc=task.title()) as tqdm_pbar:
+    #with tqdm(total=initial_duration, unit='sec', disable=verbose is not False, desc=task.title()) as tqdm_pbar:
+    if True:
 
         def update_pbar():
             nonlocal audio_features
             audio_features = None
             curr_total_duration = audio.get_duration(2)
-            if curr_total_duration != tqdm_pbar.total:
-                tqdm_pbar.total = curr_total_duration
-                tqdm_pbar.refresh()
+            #if curr_total_duration != tqdm_pbar.total:
+            #    tqdm_pbar.total = curr_total_duration
+            #    tqdm_pbar.refresh()
             seek_duration = min(curr_total_duration, round(seek_sample / SAMPLE_RATE, 2))
-            if not tqdm_pbar.disable:
-                tqdm_pbar.update(seek_duration - tqdm_pbar.n)
+            #if not tqdm_pbar.disable:
+            #    tqdm_pbar.update(seek_duration - tqdm_pbar.n)
             if progress_callback is not None:
                 progress_callback(seek=seek_duration, total=curr_total_duration)
 

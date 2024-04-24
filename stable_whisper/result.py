@@ -6,7 +6,7 @@ from typing import Union, List, Tuple, Optional, Callable
 from copy import deepcopy
 from itertools import chain
 
-from tqdm import tqdm
+#from tqdm import tqdm
 
 from .stabilization import suppress_silence, get_vad_silence_func, VAD_SAMPLE_RATES
 from .stabilization.nonvad import audio2timings
@@ -1036,7 +1036,8 @@ class WhisperResult:
         """
         min_word_dur = get_min_word_dur(min_word_dur)
         max_ts = self.segments[-1].end if self.segments else 0
-        with tqdm(total=max_ts, unit='sec', disable=not verbose, desc='Adjustment') as tqdm_pbar:
+        #with tqdm(total=max_ts, unit='sec', disable=not verbose, desc='Adjustment') as tqdm_pbar:
+        if True:
             for s in self.segments:
                 s.suppress_silence(
                     silent_starts,
@@ -1047,8 +1048,8 @@ class WhisperResult:
                     use_word_position=use_word_position
                 )
                 if verbose:
-                    tqdm_pbar.update(s.end - tqdm_pbar.n)
-            tqdm_pbar.update(tqdm_pbar.total - tqdm_pbar.n)
+                    #tqdm_pbar.update(s.end - tqdm_pbar.n)
+            #tqdm_pbar.update(tqdm_pbar.total - tqdm_pbar.n)
 
         return self
 
