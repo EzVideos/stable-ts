@@ -1047,7 +1047,7 @@ class WhisperResult:
                     nonspeech_error=nonspeech_error,
                     use_word_position=use_word_position
                 )
-                if verbose:
+                #if verbose:
                     #tqdm_pbar.update(s.end - tqdm_pbar.n)
             #tqdm_pbar.update(tqdm_pbar.total - tqdm_pbar.n)
 
