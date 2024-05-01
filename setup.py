@@ -13,7 +13,7 @@ def read_me() -> str:
 
 
 setup(
-    name="stable-ts-whisperless",
+    name="stable-ts",
     version=version(),
     description="Modifies OpenAI's Whisper to produce more reliable timestamps.",
     long_description=read_me(),
