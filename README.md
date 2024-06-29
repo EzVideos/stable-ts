@@ -22,6 +22,41 @@ https://github.com/jianfch/stable-ts/assets/28970749/7adf0540-3620-4b2b-b2d4-e31
 * [Quick 1.X → 2.X Guide](#quick-1x--2x-guide)
 
 ## Setup
+<details>
+<summary>Prerequisites: FFmpeg & PyTorch</summary>
+
+<details>
+<summary>FFmpeg</summary>
+
+Requires [FFmpeg](https://ffmpeg.org/) in PATH 
+```
+# on Ubuntu or Debian
+sudo apt update && sudo apt install ffmpeg
+
+# on Arch Linux
+sudo pacman -S ffmpeg
+
+# on MacOS using Homebrew (https://brew.sh/)
+brew install ffmpeg
+
+# on Windows using Chocolatey (https://chocolatey.org/)
+choco install ffmpeg
+
+# on Windows using Scoop (https://scoop.sh/)
+scoop install ffmpeg
+```
+</details>
+
+<details>
+<summary>PyTorch</summary>
+
+If PyTorch is not installed when installing Stable-ts, 
+the default version will be installed which may not have GPU support.
+To avoid this issue, install your preferred version with instructions at https://pytorch.org/get-started/locally/.
+</details>
+
+</details>
+
 ```
 pip install -U stable-ts
 ```
@@ -165,13 +200,12 @@ Docstrings:
         See ``stable_whisper.audio.SUPPORTED_DENOISERS`` for supported denoisers.
     denoiser_options : dict, optional
         Options to use for ``denoiser``.
-    vad : bool, default False
+    vad : bool or dict, default False
         Whether to use Silero VAD to generate timestamp suppression mask.
+        Instead of ``True``, using a dict of keyword arguments will load the VAD with the arguments.
         Silero VAD requires PyTorch 1.12.0+. Official repo, https://github.com/snakers4/silero-vad.
     vad_threshold : float, default 0.35
         Threshold for detecting speech with Silero VAD. Low threshold reduces false positives for silence detection.
-    vad_onnx : bool, default False
-        Whether to use ONNX for Silero VAD.
     min_word_dur : float or None, default None meaning use ``stable_whisper.default.DEFAULT_VALUES``
         Shortest duration each word is allowed to reach for silence suppression.
     min_silence_dur : float, optional
@@ -291,13 +325,12 @@ Docstrings:
         See ``stable_whisper.audio.SUPPORTED_DENOISERS`` for supported denoisers.
     denoiser_options : dict, optional
         Options to use for ``denoiser``.
-    vad : bool, default False
+    vad : bool or dict, default False
         Whether to use Silero VAD to generate timestamp suppression mask.
+        Instead of ``True``, using a dict of keyword arguments will load the VAD with the arguments.
         Silero VAD requires PyTorch 1.12.0+. Official repo, https://github.com/snakers4/silero-vad.
     vad_threshold : float, default 0.35
         Threshold for detecting speech with Silero VAD. Low threshold reduces false positives for silence detection.
-    vad_onnx : bool, default False
-        Whether to use ONNX for Silero VAD.
     min_word_dur : float, default 0.1
         Shortest duration each word is allowed to reach for silence suppression.
     min_silence_dur : float, optional
@@ -408,13 +441,12 @@ Docstring:
         See ``stable_whisper.audio.SUPPORTED_DENOISERS`` for supported denoisers.
     denoiser_options : dict, optional
         Options to use for ``denoiser``.
-    vad : bool, default False
+    vad : bool or dict, default False
         Whether to use Silero VAD to generate timestamp suppression mask.
+        Instead of ``True``, using a dict of keyword arguments will load the VAD with the arguments.
         Silero VAD requires PyTorch 1.12.0+. Official repo, https://github.com/snakers4/silero-vad.
     vad_threshold : float, default 0.35
         Threshold for detecting speech with Silero VAD. Low threshold reduces false positives for silence detection.
-    vad_onnx : bool, default False
-        Whether to use ONNX for Silero VAD.
     min_word_dur : float or None, default None meaning use ``stable_whisper.default.DEFAULT_VALUES``
         Shortest duration each word is allowed to reach for silence suppression.
     min_silence_dur : float, optional
@@ -858,13 +890,12 @@ Docstring:
         See ``stable_whisper.audio.SUPPORTED_DENOISERS`` for supported denoisers.
     denoiser_options : dict, optional
         Options to use for ``denoiser``.
-    vad : bool, default False
+    vad : bool or dict, default False
         Whether to use Silero VAD to generate timestamp suppression mask.
+        Instead of ``True``, using a dict of keyword arguments will load the VAD with the arguments.
         Silero VAD requires PyTorch 1.12.0+. Official repo, https://github.com/snakers4/silero-vad.
     vad_threshold : float, default 0.35
         Threshold for detecting speech with Silero VAD. Low threshold reduces false positives for silence detection.
-    vad_onnx : bool, default False
-        Whether to use ONNX for Silero VAD.
     min_word_dur : float or None, default None meaning use ``stable_whisper.default.DEFAULT_VALUES``
         Shortest duration each word is allowed to reach for silence suppression.
     min_silence_dur : float, optional
@@ -1275,6 +1306,8 @@ Any regrouping algorithm can be expressed as a string. Please feel free share yo
             to be merged.
         lock : bool, default False
             Whether to prevent future splits/merges from altering changes made by this method.
+        newline : bool, default False
+            Whether to insert a line break between the merged segments.
 
         Returns
         -------
@@ -1301,6 +1334,8 @@ Any regrouping algorithm can be expressed as a string. Please feel free share yo
             to be merged.
         lock : bool, default False
             Whether to prevent future splits/merges from altering changes made by this method.
+        newline : bool, default False
+            Whether to insert a line break between the merged segments.
 
         Returns
         -------
@@ -1367,6 +1402,34 @@ Any regrouping algorithm can be expressed as a string. Please feel free share yo
             Whether to match the case of the prefixes/suffixes with the words/segments.
         strip : bool, default True
             Whether to ignore spaces before and after both words/segments and prefixes/suffixes.
+
+        Returns
+        -------
+        stable_whisper.result.WhisperResult
+            The current instance after the changes.
+
+</details>
+
+<details>
+<summary>pad()</summary>
+
+        Pad (in-place) timestamps in chronological order.
+
+        Parameters
+        ----------
+        start_pad : float, optional
+            Seconds to pad start timestamps.
+            Each start timestamp will be extended no earlier than the end timestamp of the previous word.
+        end_pad : float, optional
+            Seconds to pad end timestamps.
+            Each end timestamp will be extended no later than the start timestamp of the next word or ``max_end``.
+        max_dur : float, optional
+            Only pad segments or words (``word_level=True``) with duration (in seconds) under or equal to ``max_dur``.
+        max_end : float, optional
+            Timestamp (in seconds) that padded timestamps cannot exceed.
+            Generally used to prevent the last padded end timestamp from exceeding the total duration of the audio.
+        word_level : bool, default False
+            Whether to pad segment timestamps or word timestamps.
 
         Returns
         -------
@@ -1812,8 +1875,9 @@ Docstring:
     k_size : int, default 5
         Kernel size for avg-pooling waveform to generate timestamp suppression mask; ignored if ``vad = true``.
         Recommend 5 or 3; higher sizes will reduce detection of silence.
-    vad : bool, default False
+    vad : bool or dict, default False
         Whether to use Silero VAD to generate timestamp suppression mask.
+        Instead of ``True``, using a dict of keyword arguments will load the VAD with the arguments.
         Silero VAD requires PyTorch 1.12.0+. Official repo, https://github.com/snakers4/silero-vad.
     vad_threshold : float, default 0.35
         Threshold for detecting speech with Silero VAD. Low threshold reduces false positives for silence detection.

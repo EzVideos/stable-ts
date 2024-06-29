@@ -245,7 +245,7 @@ def result_to_any(result: (dict, list),
         warnings.warn(message='Result contains out of order timestamp(s). Output file may not playback properly.')
 
     if segments2blocks is None:
-        sub_str = '\n\n'.join(segment2srtblock(s, i, strip=strip) for i, s in enumerate(segments))
+        sub_str = '\n\n'.join(segment2srtblock(s, i, strip=strip) for i, s in enumerate(segments, 1))
     else:
         sub_str = segments2blocks(segments)
 
@@ -314,7 +314,7 @@ def result_to_srt_vtt(result: (dict, list),
     else:
         def segments2blocks(segments):
             return 'WEBVTT\n\n' + '\n\n'.join(segment2vttblock(s, strip=strip) for i, s in enumerate(segments))
-        to_word_level_string_callback = to_vtt_word_level_segments if tag is None else tag
+        to_word_level_string_callback = to_vtt_word_level_segments if tag is None else None
 
     return result_to_any(
         result=result,
