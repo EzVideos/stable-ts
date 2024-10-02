@@ -306,7 +306,7 @@ def align(
                 end=round(segment_samples / model.feature_extractor.sampling_rate, 3),
                 tokens=[t for wt in curr_word_tokens for t in wt],
             )
-            features = model.feature_extractor(audio_segment.cpu().numpy())
+            features = model.feature_extractor(audio_segment)
             encoder_output = model.encode(features[:, : model.feature_extractor.nb_max_frames])
 
             model.add_word_timestamps(
