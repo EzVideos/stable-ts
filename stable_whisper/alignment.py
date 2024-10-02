@@ -68,7 +68,8 @@ def align(
         failure_threshold: Optional[float] = None,
         extra_models: Optional[List["Whisper"]] = None,
         presplit: Union[bool, List[str]] = True,
-        gap_padding: str = ' ...'
+        gap_padding: str = ' ...',
+        dynamic_heads: Optional[Union[bool, int, str]] = None
 ) -> Union[WhisperResult, None]:
     """
     Align plain text or tokens with audio at word-level.
@@ -93,7 +94,7 @@ def align(
     token_step : int, default 100
         Max number of tokens to align each pass. Use higher values to reduce chance of misalignment.
     original_split : bool, default False
-        Whether to preserve the original segment groupings. Segments are spit by line break if ``text`` is plain-text.
+        Whether to preserve the original segment groupings. Segments are split by line breaks if ``text`` is plain-text.
     max_word_dur : float or None, default 3.0
         Global maximum word duration in seconds. Re-align words that exceed the global maximum word duration.
     word_dur_factor : float or None, default 2.0
@@ -172,6 +173,11 @@ def align(
         Only if ``presplit=True``, ``gap_padding`` is prepended to each segments for word timing alignment.
         Used to reduce the probability of model predicting timestamps earlier than the first utterance.
         Ignored if ``model`` is a faster-whisper model.
+    dynamic_heads : bool or int or str, optional
+        Whether to find optimal cross-attention heads during runtime instead of using the predefined heads for
+        word-timestamp extraction. Specify the number of heads or `True` for default of 6 heads.
+        To specify number of iterations for finding the optimal heads,
+        use string with "," to separate heads and iterations (e.g. "8,3" for 8 heads and 3 iterations).
 
     Returns
     -------
@@ -357,7 +363,8 @@ def align(
                 append_punctuations=append_punctuations,
                 gap_padding=gap_padding if presplit else None,
                 extra_models=extra_models,
-                pad_first_seg=pad_first_seg
+                pad_first_seg=pad_first_seg,
+                dynamic_heads=dynamic_heads
             )
             if len(temp_segments) == 1:
                 return temp_segments[0]
@@ -770,8 +777,8 @@ def refine(
         Precision of refined timestamps in seconds. The lowest precision is 0.02 second.
     single_batch : bool, default False
         Whether to process in only batch size of one to reduce memory usage.
-    inplace : bool, default True, meaning return a deepcopy of ``result``
-        Whether to alter timestamps in-place.
+    inplace : bool, default True
+        Whether to alter timestamps in-place. Return a deepcopy of ``result`` if ``False``.
     denoiser : str, optional
         String of the denoiser to use for preprocessing ``audio``.
         See ``stable_whisper.audio.SUPPORTED_DENOISERS`` for supported denoisers.

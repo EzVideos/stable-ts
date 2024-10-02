@@ -243,6 +243,9 @@ Docstrings:
         Transcribe the gap after the previous word and if the average word proababiliy of a segment falls below this
         value, discard the segment. If ``None``, skip transcribing the gap to reduce chance of timestamps starting
         before the next utterance.
+    nonspeech_skip : float or None, default None
+        Skip non-speech sections that are equal or longer than this duration in seconds. Disable skipping if ``None``.
+        Reduce text and timing hallucinations in non-speech sections but may increase processing time.
     progress_callback : Callable, optional
         A function that will be called when transcription progress is updated.
         The callback need two parameters.
@@ -252,6 +255,11 @@ Docstrings:
         Whether to ignore warnings for compatibility issues with the detected Whisper version.
     extra_models : list of whisper.model.Whisper, optional
         List of additional Whisper model instances to use for computing word-timestamps along with ``model``.
+    dynamic_heads : bool or int or str, optional
+        Whether to find optimal cross-attention heads during runtime instead of using the predefined heads for 
+        word-timestamp extraction. Specify the number of heads or `True` for default of 6 heads.
+        To specify number of iterations for finding the optimal heads,
+        use string with "," to separate heads and iterations (e.g. "8,3" for 8 heads and 3 iterations).
     decode_options
         Keyword arguments to construct class:`whisper.decode.DecodingOptions` instances.
 
@@ -364,6 +372,9 @@ Docstrings:
 <summary>faster-whisper</summary>
 
 Use with [faster-whisper](https://github.com/guillaumekln/faster-whisper):
+```
+pip install -U stable-ts[fw]
+```
 ```python
 model = stable_whisper.load_faster_whisper('base')
 result = model.transcribe_stable('audio.mp3')
@@ -490,6 +501,9 @@ Docstring:
 <summary>Hugging Face Transformers (~9x faster)</summary>
 
 Run Whisper up to 9x faster with [Hugging Face Transformer](https://huggingface.co/openai/whisper-large-v3):
+```
+pip install -U stable-ts[hf]
+```
 ```python
 model = stable_whisper.load_hf_whisper('base')
 result = model.transcribe('audio.mp3')
@@ -499,7 +513,7 @@ result = model.transcribe('audio.mp3')
 <summary>CLI</summary>
 
 ```commandline
-NOT IMPLEMETED YET
+stable-ts audio.mp3 -o audio.srt -hw
 ```
 </details>
 
@@ -847,7 +861,7 @@ Docstring:
     token_step : int, default 100
         Max number of tokens to align each pass. Use higher values to reduce chance of misalignment.
     original_split : bool, default False
-        Whether to preserve the original segment groupings. Segments are spit by line break if ``text`` is plain-text.
+        Whether to preserve the original segment groupings. Segments are split by line breaks if ``text`` is plain-text.
     max_word_dur : float or None, default 3.0
         Global maximum word duration in seconds. Re-align words that exceed the global maximum word duration.
     word_dur_factor : float or None, default 2.0
@@ -926,6 +940,11 @@ Docstring:
         Only if ``presplit=True``, ``gap_padding`` is prepended to each segments for word timing alignment.
         Used to reduce the probability of model predicting timestamps earlier than the first utterance.
         Ignored if ``model`` is a faster-whisper model.
+    dynamic_heads : bool or int or str, optional
+        Whether to find optimal cross-attention heads during runtime instead of using the predefined heads for 
+        word-timestamp extraction. Specify the number of heads or `True` for default of 6 heads.
+        To specify number of iterations for finding the optimal heads,
+        use string with "," to separate heads and iterations (e.g. "8,3" for 8 heads and 3 iterations).
 
     Returns
     -------
@@ -1046,14 +1065,13 @@ Docstring:
         Precision of refined timestamps in seconds. The lowest precision is 0.02 second.
     single_batch : bool, default False
         Whether to process in only batch size of one to reduce memory usage.
-    inplace : bool, default True, meaning return a deepcopy of ``result``
-        Whether to alter timestamps in-place.
-    demucs : bool or torch.nn.Module, default False
-        Whether to preprocess ``audio`` with Demucs to isolate vocals / remove noise. Set ``demucs`` to an instance of
-        a Demucs model to avoid reloading the model for each run.
-        Demucs must be installed to use. Official repo, https://github.com/facebookresearch/demucs.
-    demucs_options : dict, optional
-        Options to use for :func:`stable_whisper.audio.demucs_audio`.
+    inplace : bool, default True
+        Whether to alter timestamps in-place. Return a deepcopy of ``result`` if ``False``.
+    denoiser : str, optional
+        String of the denoiser to use for preprocessing ``audio``.
+        See ``stable_whisper.audio.SUPPORTED_DENOISERS`` for supported denoisers.
+    denoiser_options : dict, optional
+        Options to use for ``denoiser``.
     only_voice_freq : bool, default False
         Whether to only use sound between 200 - 5000 Hz, where majority of human speech are.
     verbose : bool or None, default False
@@ -1198,7 +1216,7 @@ Any regrouping algorithm can be expressed as a string. Please feel free share yo
 
         Parameters
         ----------
-        punctuation : list of str of list of tuple of (str, str) or str
+        punctuation : list of str or list of tuple of (str, str) or str
             Punctuation(s) to split segments by.
         lock : bool, default False
             Whether to prevent future splits/merges from altering changes made by this method.
@@ -1323,7 +1341,7 @@ Any regrouping algorithm can be expressed as a string. Please feel free share yo
 
         Parameters
         ----------
-        punctuation : list of str of list of tuple of (str, str) or str
+        punctuation : list of str or list of tuple of (str, str) or str
             Punctuation(s) to merge segments by.
         max_words : int, optional
             Maximum number of words allowed in each segment.

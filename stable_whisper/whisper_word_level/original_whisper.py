@@ -67,9 +67,11 @@ def transcribe_stable(
         only_ffmpeg: bool = False,
         max_instant_words: float = 0.5,
         avg_prob_threshold: Optional[float] = None,
+        nonspeech_skip: Optional[float] = None,
         progress_callback: Callable = None,
         ignore_compatibility: bool = False,
         extra_models: Optional[List["Whisper"]] = None,
+        dynamic_heads: Optional[Union[bool, int, str]] = None,
         **decode_options) \
         -> WhisperResult:
     """
@@ -178,6 +180,9 @@ def transcribe_stable(
         Transcribe the gap after the previous word and if the average word proababiliy of a segment falls below this
         value, discard the segment. If ``None``, skip transcribing the gap to reduce chance of timestamps starting
         before the next utterance.
+    nonspeech_skip : float or None, default None
+        Skip non-speech sections that are equal or longer than this duration in seconds. Disable skipping if ``None``.
+        Reduce text and timing hallucinations in non-speech sections but may increase processing time.
     progress_callback : Callable, optional
         A function that will be called when transcription progress is updated.
         The callback need two parameters.
@@ -187,6 +192,11 @@ def transcribe_stable(
         Whether to ignore warnings for compatibility issues with the detected Whisper version.
     extra_models : list of whisper.model.Whisper, optional
         List of additional Whisper model instances to use for computing word-timestamps along with ``model``.
+    dynamic_heads : bool or int or str, optional
+        Whether to find optimal cross-attention heads during runtime instead of using the predefined heads for
+        word-timestamp extraction. Specify the number of heads or `True` for default of 6 heads.
+        To specify number of iterations for finding the optimal heads,
+        use string with "," to separate heads and iterations (e.g. "8,3" for 8 heads and 3 iterations).
     decode_options
         Keyword arguments to construct class:`whisper.decode.DecodingOptions` instances.
 
@@ -451,6 +461,21 @@ def transcribe_stable(
                 fast_forward()
                 continue
 
+            if nonspeech_skip and silence_preds['timings'] is not None:
+                silence_starts = silence_preds['timings'][0] - time_offset
+                silence_ends = silence_preds['timings'][1] - time_offset
+                silence_durations = silence_ends - silence_starts
+                skip_silence_indices = np.flatnonzero(silence_durations >= nonspeech_skip)
+                if len(skip_silence_indices):
+                    skip_idx = skip_silence_indices[0]
+                    if silence_starts[skip_idx] < min_word_dur or int(silence_starts[skip_idx] * SAMPLE_RATE) == 0:
+                        segment_samples = round(silence_ends[skip_idx] * SAMPLE_RATE)
+                        fast_forward()
+                        continue
+                    audio_segment = audio_segment[..., :int(silence_starts[skip_idx] * SAMPLE_RATE)]
+                    segment_samples = audio_segment.shape[-1]
+                    segment_duration = segment_samples / SAMPLE_RATE
+
             sample_padding = max(N_SAMPLES - segment_samples, 0)
             mel_segment = log_mel_spectrogram(audio_segment, model.dims.n_mels, padding=sample_padding)
             mel_segment = pad_or_trim(mel_segment, N_FRAMES).to(device=model.device, dtype=dtype)
@@ -572,7 +597,8 @@ def transcribe_stable(
                     ts_noise=ts_noise,
                     split_callback=split_callback,
                     gap_padding=gap_padding,
-                    extra_models=extra_models
+                    extra_models=extra_models,
+                    dynamic_heads=dynamic_heads
                 )
 
                 for i in reversed(range(len(current_segments))):
